@@ -1,1 +1,3 @@
-# w203_lab1_group1
+# Lab 1 
+
+This is the first data lab for UCB MIDS w203.
