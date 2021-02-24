@@ -1,0 +1,82 @@
+---
+title: 'Lab 1: Question 1'
+author: "Jeffrey Adams, Brittany Dougall, Jerico Johns, Li Jin"
+output: pdf_document
+---
+
+```{r load packages, echo=TRUE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2) 
+library(tidyverse)
+library(dplyr)
+```
+
+```{r load and clean data, echo=FALSE, warning=TRUE, message=FALSE}
+# Load the data
+Data <- haven::read_dta(file = 'anes_timeseries_2020_stata_20210211.dta')
+
+# Create a new data frame with only the columns of interest
+df <- Data[c("V201018", "V201507x", "V201151", "V201153", "V201624", "V201145")]
+
+# Rename the data frame columns using meaningful labels
+df <- df %>%
+  rename(registered_party = V201018,
+         age = V201507x,
+         biden_rating = V201151,
+         harris_rating = V201153,
+         covid_pos_case = V201624,
+         covid_gov_approval = V201145
+         )
+
+# Find the number of rows with null values in the biden_rating or harris_rating columns
+  # The results indicate that all responses contain some recorded value
+lapply(df[c("biden_rating", "harris_rating")],function(x) { length(which(is.na(x)))})
+
+# Create a list of responses that don't indicate an enthusiasm score for a candidate
+exclude_responses <- c("998", "999", "-4", "-9")
+
+# Create a data frame where neither the biden_rating or harris_rating columns contain an excluded response
+include <- df[ ! ((df$biden_rating %in% exclude_responses) | (df$harris_rating %in% exclude_responses)), ]
+
+# Create a final data frame that only includes voters who are registered Democrats
+final <- include[include$registered_party == 1, ]
+
+# Visualize the distribution of enthusiasm for Biden and Harris among Democratic voters
+  # The distribution of enthusiasm scores for Harris are slightly more positively shifted, however, a visual inspection of the means suggests that the average enthusiasm scores are close in value
+boxplot(final[, c("biden_rating", "harris_rating")], 
+        main = "Enthusiasm for Biden and Harris Among Registered Democrats",
+        ylab = "Enthusiasm Score")
+
+# Compute the difference in enthusiasm between Biden Harris for each respondent
+final <- final %>% mutate(difference = biden_rating - harris_rating)
+
+# The plot of the differences in enthusiasm scores and the norm indicate that the sample of differences in scores comes from a population that is normally distributed
+qqnorm(final$difference)
+
+# Use the paired t-test to test the null hypothesis that there is no significant difference in public enthusiasm for Biden and Harris
+t.test(final$biden_rating, final$harris_rating, paired = TRUE, alternative = "two.sided")
+```
+
+## Importance and Context
+In presidential elections, the presidential and vice presidential candidates run as a joint ticket. A significant difference in public enthusiasm between members of a joint ticket may influence voting patterns. For example, a strong favorable opinion regarding one of the members of a ticket may motivate a voter to still vote for the ticket even if the voter feels ambivalent about the other ticket member. Say, if a voter feels ambivalent about Joe Biden but strongly about Kamala Harris, the presence of Kamala on the ticket may motivate the voter to still vote for this joint ticket. Conversely, if enthusiasm about one candidate is low, the presence of the other member may not be sufficient to motivate the voter to choose the ticket. For example, if a voter had little enthusiasm for Biden, the presence of Kamala on the ticket may not be sufficient to inspire the voter to choose the Democratic ticket. In this scenario, voters may choose to vote for another candidate ticket or to abstain from voting at all. 
+
+## Description of Data
+<!-- Explain how your research question is operationalized, including whether the variables you create are appropriate to study the concepts in question. --> 
+<!-- What are some basic features of the data distribution? --> 
+<!-- What changes do you make to the data and why? --> 
+
+To operationalize our research question of whether or not Democratic voters are more enthusiastic about Biden or Harris, we chose the variables V201018, V201151, and V201153. V201018 contains voters' registration, allowing us to select only registered Democratic voters. V201151 contains voter enthusiasm for Biden as a candidate and V201153 contains voter enthusiasm scores for Harris. All 3 columns contain numeric scores. V201018 contains a numeric value that corresponds to voter party affiliation. V201151 and V201153 contain numeric scores ranging from $0 - 100$ to indicate voter enthusiasm level, as well as the following values for both candidates: $998$ (don't know how to rate), $-4$ (technical error), $-9$ (refused). V201153 contains the additional potential entry for Harris: $999$ (don't know the candidate). We filtered the data frame on V201018 to select only voters who are registered Democrats and excluded rows with a value of $999$, $998$, $-4$, or $-9$ for either Biden or Harris in order to effectively compare mean enthusiasm for these candidates among Democratic voters.
+
+## Most appropriate test 
+<!-- Explain which test is the most appropriate to answer your question and why it is the most appropriate --> 
+<!-- List every assumption that your test requires and evaluate it. -->
+Because we are interested in testing if Democratic voters are more enthusiastic about Biden or Harris, we chose to conduct a paired t-test to test our null hypothesis that the mean difference in enthusiasm between Biden and Harris for a given Democratic voter is $0$. To be conservative (i.e. make it more difficult to reject this null hypothesis), we chose to conduct a two-tailed paired t-test.
+
+The assumptions behind this test are: 1) the data have a metric scale, 2) I.I.D. data - each pair of measurements is drawn from the same distribution, independently of all other pairs, and 3) the distribution of the difference between measurements has no major deviations from normality, considering the sample size. Per the documentation for the columns for Biden and Harris' enthusiasm scores, valid scores can take on values between 0 and 100 (which meets the metric scale requirement). Scores outside of this range will be excluded from our analysis. Per the documentation, only 1 member of each household was surveyed and respondents were randomly selected from the USPS delivery sequence file (meeting the I.I.D. requirement). A qqnorm plot of the differences in enthusiasm scores between Biden and Harris follows a linear relationship when plotted against the mean and since the sample size is > 30, the central limit theorem kicks in (meeting the requirement that the distribution of the differences in scores has no major deviations from normality).
+
+## Test, results and interpretation
+<!-- What are the results of your test? --> 
+<!-- What do the results of this test mean? What is the practical significance? -->
+The test statistic for the two-sided paired t-test falls within the confidence interval, we fail to reject the null hypothesis (the null hypothesis being that there is no difference in mean enthusiasm for Biden and Harris among Democratic voters). The p-value result also confirms this interpretation. At approximately 0.07, the p-value is greater than our significance level of 0.05, indicating that we should fail to reject the null hypothesis. 
+
+Our test indicates a mean difference of 0.7. Since statistical significance is a pre-requisite for practical significance, our results also lack practical significance.
