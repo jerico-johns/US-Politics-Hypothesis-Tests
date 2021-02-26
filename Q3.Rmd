@@ -1,0 +1,35 @@
+
+```{r}
+library(tidyverse)
+library(haven)
+
+df = read_dta("/Users/icexelloss/workspace/w203_lab1_group1/anes_timeseries_2020_stata_20210211.dta")
+f <- df[c("V201018", "V201507x", "V201151", "V201153", "V201624","V201145")]
+df <- df %>%
+  rename(
+    registered_party = V201018,
+    age = V201507x,
+    biden_rating = V201151,
+    harris_rating = V201153,
+    covid_pos_case = V201624,
+    covid_gov_approval = V201145
+  )
+covid_df <- df[c("covid_pos_case", "covid_gov_approval")]
+covid_df <- covid_df %>% filter(covid_pos_case == 1 | covid_pos_case == 2)
+covid_df <- covid_df %>% filter(covid_gov_approval == 1 | covid_gov_approval == 2)
+covid_df <- mutate(covid_df, covid_gov_approval = ifelse(covid_gov_approval == 2, 0, covid_gov_approval)) 
+covid_df <- covid_df %>% mutate(covid_gov_approval=as.numeric(covid_gov_approval))
+
+covid_df_pos <- covid_df %>% filter(covid_pos_case == 1)
+covid_df_neg <- covid_df %>% filter(covid_pos_case == 2)
+# maps approval to 0/1. 0 = disapprove 1 = approve
+t.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = 'two.sided')
+
+#x = c(sum(covid_df_pos['covid_gov_approval']), sum(covid_df_neg['covid_gov_approval']))
+#n = c(nrow(covid_df_pos) nrow(covid_df_neg))
+#prop.test(x, n, alternative = 'two.sided')
+      
+#wilcox.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = "two.sided")
+```
+
+
