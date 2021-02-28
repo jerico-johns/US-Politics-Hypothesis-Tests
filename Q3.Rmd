@@ -1,35 +1,79 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+## 1.2 Description of Data
 
-```{r}
+```{r include=FALSE}
 library(tidyverse)
 library(haven)
+#install.packages("gridExtra")
+require(gridExtra)
+```
 
+```{r}
 df = read_dta("/Users/icexelloss/workspace/w203_lab1_group1/anes_timeseries_2020_stata_20210211.dta")
 f <- df[c("V201018", "V201507x", "V201151", "V201153", "V201624","V201145")]
 df <- df %>%
   rename(
-    registered_party = V201018,
-    age = V201507x,
-    biden_rating = V201151,
-    harris_rating = V201153,
     covid_pos_case = V201624,
     covid_gov_approval = V201145
   )
 covid_df <- df[c("covid_pos_case", "covid_gov_approval")]
-covid_df <- covid_df %>% filter(covid_pos_case == 1 | covid_pos_case == 2)
-covid_df <- covid_df %>% filter(covid_gov_approval == 1 | covid_gov_approval == 2)
-covid_df <- mutate(covid_df, covid_gov_approval = ifelse(covid_gov_approval == 2, 0, covid_gov_approval)) 
-covid_df <- covid_df %>% mutate(covid_gov_approval=as.numeric(covid_gov_approval))
+covid_df <- covid_df %>% mutate(covid_pos_case = as.factor(covid_pos_case)) %>% mutate(covid_gov_approval = as.factor(covid_gov_approval))
+```
+
+### Data Cleaning
+`covid_pos_case` and `covid_gov_approval` both contain invalid values. The percentage of each value in those two columns are shown in the following charts:
+
+```{r ggplot2}
+ggplot(covid_df, aes(as.factor(covid_pos_case))) + geom_bar(aes(y=(..count..)/sum(..count..))) + scale_x_discrete('covid_pos_case', limits=c('-9', '-5', '1', '2'), labels=c("refused", 'interview breakoff', 'positive', 'negative')) + 
+  labs(title='Data distribution for covid_pos_case', y="percentage", x='covid_pos_case value')
+```
+
+```{r}
+ggplot(covid_df, aes(as.factor(covid_gov_approval))) + geom_bar(aes(y=(..count..)/sum(..count..))) + scale_x_discrete('covid_gov_approval', limits=c('-9', '-8', '1', '2'), labels=c("refused", 'don\'t know', 'approve', 'disapprove')) + 
+  labs(title='Data distribution for covid_gov_approval', y="percentage", x='covid_pos_case value')
+```
+
+Given that the percentage of invalid data are small, we decide to exclude rows that contains an invalid value for either column. We also map value for `covid_gov_approval` from: `1: approve` and `2: disapprove` to more standard mapping for binary variable: `0: disapprove` and `1: approve`.
+
+```{r}
+covid_df <- covid_df %>% 
+  filter(covid_pos_case == 1 | covid_pos_case == 2) %>% 
+  filter(covid_gov_approval == 1 | covid_gov_approval == 2) %>% 
+  mutate(covid_gov_approval = ifelse(covid_gov_approval == 1, 1, 0))
+```
+
+We design the test such that the **null hypothesis** is **The difference in means is equal to 0**. The mean of the `covid_gov_approval` can be interpreted as "Percentage of respondents that are approval of their governor". We set the *alpha* to be 0.05. 
+
+If the test were to **reject the null hypothesis** we would conclude that the respondents who had someone in their home infected by *COVID-19* have a measurably different approve/disapprove differential of the way their governor is handling the pandemic compared to those who did have someone in their home infected by *COVID-19*. If the test were to **fail to reject the null hypothesis** then I would conclude that either there is not enough data, the hypothesized effect does not exist, or the test was inappropriate to conduct against data collected in this manor.
+
+```{r}
 
 covid_df_pos <- covid_df %>% filter(covid_pos_case == 1)
 covid_df_neg <- covid_df %>% filter(covid_pos_case == 2)
-# maps approval to 0/1. 0 = disapprove 1 = approve
 t.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = 'two.sided')
 
-#x = c(sum(covid_df_pos['covid_gov_approval']), sum(covid_df_neg['covid_gov_approval']))
-#n = c(nrow(covid_df_pos) nrow(covid_df_neg))
+#x <- c(sum(covid_df_pos['covid_gov_approval']), sum(covid_df_neg['covid_gov_approval']))
+#n <- c(nrow(covid_df_pos), nrow(covid_df_neg))
 #prop.test(x, n, alternative = 'two.sided')
-      
-#wilcox.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = "two.sided")
 ```
 
+According to the test, we **reject the null hypothesis**. Our two-tailed p = 0.04307 < alpha = 0.05, giving us a high degree of confidence that the two means statistically significantly different. The mean approval rating (proportion of approval ratings) was 0.56 for respondents who experienced a COVID-19 case in their household, and 0.62 for those who did not. The 95% Confidence Interval for the difference in means is [-0.12 to -0.002]. Cohen’s d effect size is -0.126. 
+
+```{r}
+cohen_d <- function(x, y) {
+    x_mean = mean(x)
+    y_mean = mean(y)
+    x_n = length(x)
+    y_n = length(y)
+    x_s = sd(x)
+    y_s = sd(y)
+    s = sqrt(((x_n - 1) * x_s^2 + (y_n - 1) * y_s^2) / (x_n + y_n))
+    cohen_d = (x_mean - y_mean) / s
+    return(cohen_d)
+}
+```
 
