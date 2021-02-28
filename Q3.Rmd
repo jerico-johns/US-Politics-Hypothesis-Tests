@@ -3,14 +3,17 @@ output:
   pdf_document: default
   html_document: default
 ---
-## 1.2 Description of Data
-
 ```{r include=FALSE}
 library(tidyverse)
 library(haven)
 #install.packages("gridExtra")
 require(gridExtra)
 ```
+
+
+## Description of Data
+
+Data is collected from the 2020 America National Election Survey (ANES), that uses cross-sectional random sampling on USPS household records to survey a single individual from a randomly selected household regarding their political opinions and voting behavior in the upcoming U.S. presidential election (data collected between August 18, 2020 and November 3rd, 2020). To operationalize our research question, we chose to use V201624 to define our two samples (Population 1: Someone in the household has tested positive for COVID-19, Population 2: No one tested positive) and V201145 as our binary outcome of interest (Do you approve or disapprove of the way [Governor] has handled the COVID-19 pandemic?). These variables are renamed covid_pos_case and covid_gov_approval in our analysis.
 
 ```{r}
 df = read_dta("/Users/icexelloss/workspace/w203_lab1_group1/anes_timeseries_2020_stata_20210211.dta")
@@ -25,7 +28,7 @@ covid_df <- covid_df %>% mutate(covid_pos_case = as.factor(covid_pos_case)) %>% 
 ```
 
 ### Data Cleaning
-`covid_pos_case` and `covid_gov_approval` both contain invalid values. The percentage of each value in those two columns are shown in the following charts:
+`covid_pos_case` and `covid_gov_approval` both contain non definitive values (i.e. Interview Breakoff, Don’t know, Refused). The percentage of each value in those two columns are shown in the following charts:
 
 ```{r ggplot2}
 ggplot(covid_df, aes(as.factor(covid_pos_case))) + geom_bar(aes(y=(..count..)/sum(..count..))) + scale_x_discrete('covid_pos_case', limits=c('-9', '-5', '1', '2'), labels=c("refused", 'interview breakoff', 'positive', 'negative')) + 
@@ -36,8 +39,7 @@ ggplot(covid_df, aes(as.factor(covid_pos_case))) + geom_bar(aes(y=(..count..)/su
 ggplot(covid_df, aes(as.factor(covid_gov_approval))) + geom_bar(aes(y=(..count..)/sum(..count..))) + scale_x_discrete('covid_gov_approval', limits=c('-9', '-8', '1', '2'), labels=c("refused", 'don\'t know', 'approve', 'disapprove')) + 
   labs(title='Data distribution for covid_gov_approval', y="percentage", x='covid_pos_case value')
 ```
-
-Given that the percentage of invalid data are small, we decide to exclude rows that contains an invalid value for either column. We also map value for `covid_gov_approval` from: `1: approve` and `2: disapprove` to more standard mapping for binary variable: `0: disapprove` and `1: approve`.
+Given that the percentage of invalid data are small, we decide to exclude any responses that are not a definitive response and analyze how these omissions impact our two samples in the interpretation of results. We also map value for `covid_gov_approval` from: `1: approve` and `2: disapprove` to more standard mapping for binary variable: `0: disapprove` and `1: approve`.
 
 ```{r}
 covid_df <- covid_df %>% 
@@ -46,9 +48,33 @@ covid_df <- covid_df %>%
   mutate(covid_gov_approval = ifelse(covid_gov_approval == 1, 1, 0))
 ```
 
+## Most appropriate test
+
+Given our outcome variable of interest is a binary approve/disapprove rating, we treat it as a binomial distribution, and choose to use a Welch Two Sample t-test for comparing two means (i.e. proportions in the binomial case) to evaluate the null hypothesis: 
+H0: There is no difference in the proportion of voters who disapprove of their governor’s handling of COVID-19 between the two groups. (mu1(=p1)  = mu2 (=p2)) 
+HA: The difference in the proportion of voters who disapprove of their governor’s handling of COVID-19 does not equal 0 (mu1(=p1) <> mu2(=p2)). 
+
+Perhaps the best test in this situation is a Chi-squared test, given we are comparing proportions of two groups, however the two sample t-test for comparing population means serves the same purpose, and indeed will give the same results, as the mean or expected value of a binomial distribution is in fact the proportion of ‘successes’ of such a distribution. 
+
+Our assumptions for such a test are: 
+
+Metric scale
+
+We treat agree / disagree ratings (which are not metric at first glance) as a binomial distribution with Pr(Disagree) = Pr(0) and Pr(Agree) = Pr(1). Two categorical variables are inherently a binomial metric distribution, unlike ordinal variables with 3 or more categories which can not be treated as a binomial or metric distribution. Thus the binomial distribution gives us an expectation which is also the proportion of those who disapprove in the population. 
+	
+IID Data 
+
+We argue that our data is indeed independent, as only one member from each household is surveyed which limits a household dependence in responses, and households are selected randomly for survey across stratified groups. One concern is that respondents were offered increasing financial incentive, which may have created a selection bias in who chose to respond (i.e. more likely to respond if low income since financial incentive is relatively greater). It is a bit tougher to argue that our data is identically distributed. Even though our data is collected across the span of less than 4 months, the 4 months leading up to the election were one of the more rapidly changing 4 months we’ve experienced, with COVID-19 cases spiking dramatically into the November election which may have changed the distribution of public opinion toward federal and state governments. Our data thus should be interpreted with a degree of skepticism, as it may be likely that the response actually underestimate the proportion of governor disapproval given the dramatic increase in COVID cases throughout collection and post-collection. 
+
+No major deviations from normality, considering the sample size
+
+Given sample size > 40, we have sufficient sample size n for CLT to kick in, even for a binomial distribution. 
+
 We design the test such that the **null hypothesis** is **The difference in means is equal to 0**. The mean of the `covid_gov_approval` can be interpreted as "Percentage of respondents that are approval of their governor". We set the *alpha* to be 0.05. 
 
 If the test were to **reject the null hypothesis** we would conclude that the respondents who had someone in their home infected by *COVID-19* have a measurably different approve/disapprove differential of the way their governor is handling the pandemic compared to those who did have someone in their home infected by *COVID-19*. If the test were to **fail to reject the null hypothesis** then I would conclude that either there is not enough data, the hypothesized effect does not exist, or the test was inappropriate to conduct against data collected in this manor.
+
+### Test, results and interpretation
 
 ```{r}
 
