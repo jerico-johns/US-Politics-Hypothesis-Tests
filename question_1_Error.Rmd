@@ -1,0 +1,85 @@
+---
+title: 'Lab 1: Question 1'
+author: "Li Jin, Brittany Dougall, Jerico Johns, Jeff Adams"
+output: pdf_document
+---
+
+```{r load packages, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(haven)
+install.packages("effsize")
+library(effsize)
+```
+
+```{r load and clean data, echo=FALSE}
+Data <- read_dta(file = '~/W203/Lab_1/anes_data.dta')
+
+df <- Data[c("V201018", "V201507x", "V201151", "V201153", "V201624","V201145", "V201228")]
+
+df <- df %>%
+    rename(
+      registered_party = V201018,
+      party_identity = V201228,
+      age = V201507x,
+      biden_rating = V201151,
+      harris_rating = V201153,
+      covid_pos_case = V201624,
+      covid_gov_approval = V201145
+    )
+
+#df %>% count(party_identity)
+
+#hist(df$age)
+
+df_dem <- subset(df, party_identity == 1 & age != -9)
+
+df_rep <- subset(df, party_identity == 2 & age != -9)
+
+
+
+```
+
+
+## Importance and Context
+The United States has been on a two party political system since the 1850's. These two parties have been the republican
+and democratic party. Each party has had its ups and downs throughout the years. They have also appealed to different
+demographics over the years. It has long been the goal of each party to gain the vote of the younger generation. We would like to look at a recent survey to see if the age demographic between the two parties is different. This survey was conducted on a cross-sectional sample on the USPS computerized delivery sequence files, which includes residential addresses across the 50 states and Washington DC from August 18, 2020 to November 3, 2020.
+
+
+## Description of Data
+The two main variables for this analysis are party affiliation and age. We used code V201228 to determine what party each subject affiliated with. The question on the survey asked the subject what party they self identified with. We also used code V201507x to determine the subjects age. The subject could refuse to submit an age, so they were excluded from the data set. 
+After the data clean up we had 2,786 Democratic subjects and 2,448 Republican subjects. You can see the distribution of ages for each party below. As you can see both parties have similar distributions, but one thing to note is that the republicans have a large portion at 80 years old. This is because the survey had a category of 80 +. This means that the republican subjects could actually be much older than we are showing, but because of the nature of the survey we are missing that data and truncating it at 80. This will be important to account for when looking at the practical significance of the results.
+
+```{r clean data and plot age histograms, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(df_dem, aes(x=age)) + 
+  geom_histogram(color="black", fill="blue") +
+   ggtitle("Democrate's Age") + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(df_rep, aes(x=age)) + 
+  geom_histogram(color="black", fill="red") +
+   ggtitle("Republican's Age") + theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+## Most appropriate test
+We believe that the most appropriate test for our question is an independent two tail t test. The two samples that we are comparing are completely independent of each other, because one person can either be a Democrat or a Republican, these two are not linked. We also don't have a very strong assumption of the data leaning one way or another so we need to use the two tailed test.
+There are three main assumptions needed for this test. first that the data is numeric. The age data that we are using is numeric between 18 and 80+. Second the sample needs to be independent and identically distributed (iid). The data is being pulled from only one individual per house hold. So there should not be subjects that are impacting each others results. So the data is independent. Also the data is being collected in a very short period of time so the population is not changing, meaning the data is also identical. Lastly the data should have no major distributions in normality, considering the size of the sample. As seen in the charts above the data is not normally distributed, but our sample sizes are 2,500 or greater. This is well above 30 so the central limit theorem will kick in and we will have no problem meeting this assumption. Our null hypothesis for this test is that there is no difference in the mean ages between Democrats and Republicans. The alternative Hypothesis is that there is a difference.
+
+
+## Test, results and interpretation
+Below you can see the results of our independent two tail t test. The t value for this test is -5.75 this is well outside of our 95% confidence interval (-3.63 - -1.78). This results in a p-value of 9.366e-09. Therefore we have enough statistical significance to reject the null hypothesis. On the other hand if you look at the two means they are only showing a difference of 3 years (Effect Size) for the groups. This isn't a lot of practical significance. As well the effect size from Cohen's D is -.158 which is very small, showing little to no practical significance. So although we can reject the null hypothesis the actual age difference might not be very significant, but it does show that Democrats lean younger than Republicans. Another important note is that Republicans have a higher percentage of people in the 80+ group this means that we could possibly be truncating older people from the republican group. This could cause a larger spread in our means, giving us more practical significance. 
+
+```{r Hypothesis Test, echo=TRUE, warning=FALSE, message=FALSE}
+
+t.test(df_dem$age, df_rep$age, alternative = "two.sided", var.equal = FALSE)
+cohen.d(df_dem$age, df_rep$age, paired=FALSE)
+
+```
+
+
+
