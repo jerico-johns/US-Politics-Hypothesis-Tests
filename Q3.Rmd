@@ -60,7 +60,7 @@ Our assumptions for such a test are:
 
 Metric scale
 
-We treat agree / disagree ratings (which are not metric at first glance) as a binomial distribution with Pr(Disagree) = Pr(0) and Pr(Agree) = Pr(1). Two categorical variables are inherently a binomial metric distribution, unlike ordinal variables with 3 or more categories which can not be treated as a binomial or metric distribution. Thus the binomial distribution gives us an expectation which is also the proportion of those who disapprove in the population. 
+We treat approve / disapprove ratings (which are not metric at first glance) as a binomial distribution with Pr(Disapprove) = Pr(0) and Pr(Approve) = Pr(1). Two categorical variables are inherently a binomial metric distribution, unlike ordinal variables with 3 or more categories which can not be treated as a binomial or metric distribution. Thus the binomial distribution gives us an expectation which is also the proportion of those who disapprove in the population.
 	
 IID Data 
 
