@@ -1,22 +1,31 @@
 ---
-output:
-  pdf_document: default
-  html_document: default
+title: 'Lab 1: Question 3'
+author: "Jeffrey Adams, Brittany Dougall, Jerico Johns, Li Jin"
+output: pdf_document
 ---
-```{r include=FALSE}
+```{r load packages, echo=TRUE, warning=FALSE, message=FALSE}
+install.packages("rstatix", repos = "http://cran.us.r-project.org")
+install.packages("coin", repos = "http://cran.us.r-project.org")
+library(coin)
+library(rstatix)
 library(tidyverse)
 library(haven)
-#install.packages("gridExtra")
 require(gridExtra)
 ```
+## Importance and Context 
 
+As of late February, 2021 COVID-19 has taken the lives of more than 507,000 Americans and infected more than 28 million. Weekly jobless claims continue to hover around 1 million new cases a week, compared to less than 200,000 weekly claims pre-pandemic. (Source: CNBC). There have been plenty of mistakes that put America in this position, from federal to local government. Understanding where Americans place blame for the mishaps that have prevented America from course-correcting during the past year is critical to understanding how politics might be changed by voter preference in upcoming elections. Formally our research question is: 
+
+<b>How does COVID-19 exposure at the household level influence the likelihood a voter will disapprove of their Governor’s handling of COVID-19?</b> 
+
+To analyze how the pandemic is changing voter sentiment, we analyze the difference in mean approval rating between voters who have had someone in their house test positive for COVID-19 and voters who have not. 
 
 ## Description of Data
 
 Data is collected from the 2020 America National Election Survey (ANES), that uses cross-sectional random sampling on USPS household records to survey a single individual from a randomly selected household regarding their political opinions and voting behavior in the upcoming U.S. presidential election (data collected between August 18, 2020 and November 3rd, 2020). To operationalize our research question, we chose to use V201624 to define our two samples (Population 1: Someone in the household has tested positive for COVID-19, Population 2: No one tested positive) and V201145 as our binary outcome of interest (Do you approve or disapprove of the way [Governor] has handled the COVID-19 pandemic?). These variables are renamed covid_pos_case and covid_gov_approval in our analysis.
 
-```{r}
-df = read_dta("/Users/icexelloss/workspace/w203_lab1_group1/anes_timeseries_2020_stata_20210211.dta")
+```{r, echo=FALSE, warning=TRUE, message=FALSE}
+df = read_dta("anes_timeseries_2020_stata_20210211.dta")
 f <- df[c("V201018", "V201507x", "V201151", "V201153", "V201624","V201145")]
 df <- df %>%
   rename(
@@ -24,24 +33,32 @@ df <- df %>%
     covid_gov_approval = V201145
   )
 covid_df <- df[c("covid_pos_case", "covid_gov_approval")]
-covid_df <- covid_df %>% mutate(covid_pos_case = as.factor(covid_pos_case)) %>% mutate(covid_gov_approval = as.factor(covid_gov_approval))
+covid_df <- covid_df %>% mutate(covid_pos_case = as.factor(covid_pos_case)) %>%
+   mutate(covid_gov_approval = as.factor(covid_gov_approval))
 ```
 
 ### Data Cleaning
 `covid_pos_case` and `covid_gov_approval` both contain non definitive values (i.e. Interview Breakoff, Don’t know, Refused). The percentage of each value in those two columns are shown in the following charts:
 
-```{r ggplot2}
-ggplot(covid_df, aes(as.factor(covid_pos_case))) + geom_bar(aes(y=(..count..)/sum(..count..))) + scale_x_discrete('covid_pos_case', limits=c('-9', '-5', '1', '2'), labels=c("refused", 'interview breakoff', 'positive', 'negative')) + 
-  labs(title='Data distribution for covid_pos_case', y="percentage", x='covid_pos_case value')
+```{r fig.width = 7, fig.height= 3.5, echo=FALSE, warning=TRUE, message=FALSE}
+ggplot(covid_df, aes(as.factor(covid_pos_case))) + geom_bar(aes(y=(..count..)
+    /sum(..count..))) + scale_x_discrete('covid_pos_case', 
+    limits=c('-9', '-5', '1', '2'), 
+    labels=c("refused", 'interview breakoff', 'positive', 'negative')) + 
+  labs(title='Data distribution for covid_pos_case', y="percentage", 
+  x='covid_pos_case value')
 ```
 
-```{r}
-ggplot(covid_df, aes(as.factor(covid_gov_approval))) + geom_bar(aes(y=(..count..)/sum(..count..))) + scale_x_discrete('covid_gov_approval', limits=c('-9', '-8', '1', '2'), labels=c("refused", 'don\'t know', 'approve', 'disapprove')) + 
-  labs(title='Data distribution for covid_gov_approval', y="percentage", x='covid_pos_case value')
+```{r fig.width = 7, fig.height= 3.5, echo=FALSE, warning=TRUE, message=FALSE}
+ggplot(covid_df, aes(as.factor(covid_gov_approval))) + 
+  geom_bar(aes(y=(..count..)/sum(..count..))) + 
+  scale_x_discrete('covid_gov_approval', limits=c('-9', '-8', '1', '2'),                                             labels=c("refused", 'don\'t know', 'approve', 'disapprove')) + 
+labs(title='Data distribution for covid_gov_approval', y="percentage", 
+     x='covid_pos_case value')
 ```
 Given that the percentage of invalid data are small, we decide to exclude any responses that are not a definitive response and analyze how these omissions impact our two samples in the interpretation of results. We also map value for `covid_gov_approval` from: `1: approve` and `2: disapprove` to more standard mapping for binary variable: `0: disapprove` and `1: approve`.
 
-```{r}
+```{r, echo=FALSE, warning=TRUE, message=FALSE}
 covid_df <- covid_df %>% 
   filter(covid_pos_case == 1 | covid_pos_case == 2) %>% 
   filter(covid_gov_approval == 1 | covid_gov_approval == 2) %>% 
@@ -51,45 +68,32 @@ covid_df <- covid_df %>%
 ## Most appropriate test
 
 Given our outcome variable of interest is a binary approve/disapprove rating, we treat it as a binomial distribution, and choose to use a Welch Two Sample t-test for comparing two means (i.e. proportions in the binomial case) to evaluate the null hypothesis: 
-H0: There is no difference in the proportion of voters who disapprove of their governor’s handling of COVID-19 between the two groups. (mu1(=p1)  = mu2 (=p2)) 
-HA: The difference in the proportion of voters who disapprove of their governor’s handling of COVID-19 does not equal 0 (mu1(=p1) <> mu2(=p2)). 
+H0: There is no difference in the proportion of voters who disapprove of their governor’s handling of COVID-19 between the two groups. /mu_{1}(=p1) = /mu_{2}(=p2)
+HA: The difference in the proportion of voters who disapprove of their governor’s handling of COVID-19 does not equal 0 mu_{1}(=p1) <> /mu_{2}(=p2) 
 
-Perhaps the best test in this situation is a Chi-squared test, given we are comparing proportions of two groups, however the two sample t-test for comparing population means serves the same purpose, and indeed will give the same results, as the mean or expected value of a binomial distribution is in fact the proportion of ‘successes’ of such a distribution. 
+Although there are other tests specifically for testing differences in proportions (i.e. Proportions Test or Chi-Squared Test) we will utilize the two-sample t-test, as the mean, or expected value, of a binomial distribution is in fact the proportion of successes of such a distribution. While we in theory are comparing our test statistics to a Z-distribution (standard normal), the t-test functionality in R forces us to compare to a t-distribution, which with large n approximates Z almost equally. A proportions test would compare to a Chi-squared distribution, which is slightly different and would lead to slightly different results and interpretation. We will therefore be careful in our interpretation of the t-test results with regards to the mean of a binary outcome. 
 
 Our assumptions for such a test are: 
 
-Metric scale
-
-We treat approve / disapprove ratings (which are not metric at first glance) as a binomial distribution with Pr(Disapprove) = Pr(0) and Pr(Approve) = Pr(1). Two categorical variables are inherently a binomial metric distribution, unlike ordinal variables with 3 or more categories which can not be treated as a binomial or metric distribution. Thus the binomial distribution gives us an expectation which is also the proportion of those who disapprove in the population.
+Metric scale: We treat approve / disapprove ratings (which are not metric at first glance) as a binomial distribution with Pr(Disapprove) = Pr(0) and Pr(Approve) = Pr(1). 
 	
-IID Data 
+IID Data: We argue that our data is indeed independent, as only one member from each household is surveyed which limits a household dependence in responses, and households are selected randomly for survey across stratified groups. It is a bit tougher to argue that our data is identically distributed. Even though our data is collected across the span of less than 4 months, the 4 months leading up to the election were one of the more rapidly changing 4 months in recent memory, with COVID-19 cases spiking dramatically into the November election which may have changed the distribution of public opinion toward federal and state governments. Our data thus should be interpreted with a degree of skepticism, as it may be likely that the response actually underestimate the proportion of governor disapproval given the dramatic increase in COVID cases throughout collection and post-collection. 
 
-We argue that our data is indeed independent, as only one member from each household is surveyed which limits a household dependence in responses, and households are selected randomly for survey across stratified groups. One concern is that respondents were offered increasing financial incentive, which may have created a selection bias in who chose to respond (i.e. more likely to respond if low income since financial incentive is relatively greater). It is a bit tougher to argue that our data is identically distributed. Even though our data is collected across the span of less than 4 months, the 4 months leading up to the election were one of the more rapidly changing 4 months we’ve experienced, with COVID-19 cases spiking dramatically into the November election which may have changed the distribution of public opinion toward federal and state governments. Our data thus should be interpreted with a degree of skepticism, as it may be likely that the response actually underestimate the proportion of governor disapproval given the dramatic increase in COVID cases throughout collection and post-collection. 
-
-No major deviations from normality, considering the sample size
-
-Given sample size > 40, we have sufficient sample size n for CLT to kick in, even for a binomial distribution. 
-
-We design the test such that the **null hypothesis** is **The difference in means is equal to 0**. The mean of the `covid_gov_approval` can be interpreted as "Percentage of respondents that are approval of their governor". We set the *alpha* to be 0.05. 
-
-If the test were to **reject the null hypothesis** we would conclude that the respondents who had someone in their home infected by *COVID-19* have a measurably different approve/disapprove differential of the way their governor is handling the pandemic compared to those who did have someone in their home infected by *COVID-19*. If the test were to **fail to reject the null hypothesis** then I would conclude that either there is not enough data, the hypothesized effect does not exist, or the test was inappropriate to conduct against data collected in this manor.
+No major deviations from normality, considering the sample size: Given sample size > 40, we have sufficient sample size n for CLT to kick in, even for a binomial distribution. 
 
 ### Test, results and interpretation
 
-```{r}
+```{r, echo=FALSE, warning=TRUE, message=FALSE}
 
 covid_df_pos <- covid_df %>% filter(covid_pos_case == 1)
 covid_df_neg <- covid_df %>% filter(covid_pos_case == 2)
 t.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = 'two.sided')
-
-#x <- c(sum(covid_df_pos['covid_gov_approval']), sum(covid_df_neg['covid_gov_approval']))
-#n <- c(nrow(covid_df_pos), nrow(covid_df_neg))
-#prop.test(x, n, alternative = 'two.sided')
 ```
 
-According to the test, we **reject the null hypothesis**. Our two-tailed p = 0.04307 < alpha = 0.05, giving us a high degree of confidence that the two means statistically significantly different. The mean approval rating (proportion of approval ratings) was 0.56 for respondents who experienced a COVID-19 case in their household, and 0.62 for those who did not. The 95% Confidence Interval for the difference in means is [-0.12 to -0.002]. Cohen’s d effect size is -0.126. 
+  According to the test, we **reject the null hypothesis**. Our two-tailed p = 0.04307 < alpha = 0.05, giving us a high degree of confidence that the two means statistically significantly different. The mean approval rating (proportion of approval ratings) was 0.56 for respondents who experienced a COVID-19 case in their household, and 0.62 for those who did not. The 95% Confidence Interval for the difference in means is [-0.12 to -0.002]. Cohen’s d effect size is -0.126. 
+  Given this effect size is less than a small Cohen’s effect size of |0.2|, and our 95% confidence interval suggests a relatively minor difference of less than 0.1, we would classify our finding as having moderate practical significance. A 0-10 ppt difference in approval rating may indeed swing votes or even an election, but the bounds are close enough to 0 that we can’t claim a large effect size. As we mentioned earlier, our responses were collected from August to November 2020, and cases only continued to spike to peak levels from Thanksgiving - New Years after this survey was conducted. We hope to continue research on this topic with refreshed data to see if there is a shift in the difference in approval rating (and effect size) since November, 2020. 
 
-```{r}
+```{r, echo=FALSE, warning=TRUE, message=FALSE}
 cohen_d <- function(x, y) {
     x_mean = mean(x)
     y_mean = mean(y)
@@ -103,3 +107,4 @@ cohen_d <- function(x, y) {
 }
 ```
 
+Data Source: American National Election Studies. 2021. ANES 2020 Time Series Study Preliminary Release: Pre-Election Data [dataset and documentation]. February 11, 2021 version. www.electionstudies.org
