@@ -19,6 +19,7 @@ Data <- read_dta(file = '~/W203/Lab_1/anes_data.dta')
 
 # Filter needed columns
 df <- Data[c("V201018", "V201507x", "V201151", "V201153", "V201624","V201145", "V201228")]
+
 # Rename Columns
 df <- df %>%
     rename(
@@ -37,8 +38,8 @@ df_dem <- subset(df, party_identity == 1 & age != -9)
 
 df_rep <- subset(df, party_identity == 2 & age != -9)
 
-df_comb <- rbind(data.frame(label = "Democrate", fill="blue", age=df_dem$age),
-            data.frame(label = "Republican", fill="red", age=df_rep$age))
+df_comb <- rbind(data.frame(label = "Democrate", fill="red", age=df_dem$age),
+            data.frame(label = "Republican", fill="blue", age=df_rep$age))
 
 ```
 
@@ -46,7 +47,7 @@ df_comb <- rbind(data.frame(label = "Democrate", fill="blue", age=df_dem$age),
 ## Importance and Context
 The United States has been on a two party political system since the 1850's. These two parties have been the republican
 and democratic party. Each party has had its ups and downs throughout the years. They have also appealed to different
-demographics over the years. It has long been the goal of each party to gain the vote of the younger generation. The younger generation has historically had the lowest voter turn out. If a party could capture this vote they would be gaining a large percentage of brand new voters. As well these voters have many years of voting ahead of them. So the young vote helps the longevity of the party. We would like to look at a recent survey to see if the age demographic between the two parties is different by comparing the mean age for Republican respondents to the mean age of Democratic respondents using a two sample t-test.
+demographics over the years. It has long been the goal of each party to gain the vote of the younger generation. The younger generation has consistently had the lowest voter turn out (http://www.electproject.org/). If a party could capture this vote they would be gaining a large percentage of brand new voters. As well these voters have many years of voting ahead of them. So the young vote helps the longevity of the party. We would like to look at a recent survey to see if the age demographic between the two parties is different by comparing the mean age for Republican respondents to the mean age of Democratic respondents using a two sample t-test.
 
 
 ## Description of Data
@@ -58,7 +59,7 @@ After the data clean up we had 2,786 Democratic respondents and 2,448 Republican
 ggplot(df_comb, aes(x=age, fill=fill)) +
     geom_histogram(binwidth=1, colour="black", position="dodge") +
     scale_fill_identity() + ggtitle("Histogram of Age Distribution") +
-    scale_fill_manual(name = "Party", values = c("red", "blue"), labels = c("Dem", "Rep")) + theme_classic()
+    scale_fill_manual(name = "Party", values = c("blue", "red"), labels = c("Dem", "Rep")) + theme_classic()
 
 
 ```
@@ -70,7 +71,7 @@ There are three main assumptions needed for this test:
 
 - The data needs to be numeric. The age data that we are using is numeric between 18 and 80. 
 
-- The sample needs to be independent and identically distributed (iid). The data is being pulled from only one individual per house hold. So there should not be respondents that are impacting each others results. So the data is independent. Also the data is being collected in a very short period of time period within the election, so the population is not changing. Therefore the data is also identical. 
+- The sample needs to be independent and identically distributed (iid). The data is being pulled from only one individual per household. So there should not be respondents that are impacting each others results. So the data is independent. Also the data is being collected in a very short period of time period within the election, so the population is not changing. Therefore the data is also identical. 
 
 - The data should have no major deviations in normality, considering the size of the sample. As seen in the charts above the data is not normally distributed, but our sample sizes are 2,500 or greater. This is well above 30, so the central limit theorem will kick in and we will have no problem meeting this assumption. 
 
@@ -78,7 +79,7 @@ Given these assumptions being met we will evaluate the null hypothesis with an $
 
 - $H_{0}$: There is no difference in the mean ages between Democrats and Republicans. $\mu_{1}$ = $\mu_{2}$
 
-- $H_{a}$: There is a difference in the mean ages between Democrats and Republicans.$\mu_{1}$ <> $\mu_{2}$
+- $H_{a}$: There is a difference in the mean ages between Democrats and Republicans. $\mu_{1}$ <> $\mu_{2}$
 
 
 ## Test, results and interpretation
