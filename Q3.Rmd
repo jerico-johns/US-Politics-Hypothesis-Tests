@@ -113,9 +113,9 @@ covid_df_neg <- covid_df_final %>% filter(covid_pos_case == 2)
 t.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = 'two.sided')
 ```
 
-According to the test, we **reject the null hypothesis**. Our two-tailed $p = 0.04$ < $\alpha$ $= 0.05$, giving us a high degree of confidence that the two means statistically significantly different. The mean approval rating (proportion of approval ratings) was 0.56 for respondents who experienced a COVID-19 case in their household, and 0.62 for those who did not. The 95% Confidence Interval for the difference in means is [-0.12 to 0.00]. Cohen’s  d effect size is -0.13.
+According to the test, we **reject the null hypothesis**. Our two-tailed $p = 0.04$ < $\alpha$ $= 0.05$, which indicates our two means are significantly different. The mean approval rating (proportion of approval ratings) was 0.56 for respondents who experienced a COVID-19 case in their household, and 0.62 for those who did not. The 95% Confidence Interval for the difference in means is [-0.12 to 0.00]. Cohen’s  d effect size is -0.13.
 
-Given this effect size is less than a small Cohen’s effect size of |0.2|, and our 95% confidence interval suggests a relatively minor difference of less than 0.1, we would classify our finding as having moderate practical significance. A 0-10 ppt difference in approval rating may indeed swing votes or even an election, but the bounds are close enough to 0 that we can’t confidently claim a large effect size. As we mentioned earlier, our responses were collected from August to November 2020, and cases only continued to spike to peak levels from Thanksgiving to New Years after this survey was conducted. We hope to continue research on this topic with refreshed data to see if there is a shift in the difference in approval rating (and effect size) since November, 2020. 
+Given this effect size is less than a small Cohen’s effect size of |0.2|, and our 95% confidence interval suggests a relatively minor difference of less than 0.1, we would classify our finding as having moderate practical significance. A 0-10 ppt difference in approval rating may indeed swing votes or even an election, but the bounds are close enough to 0 that we can’t confidently claim a large effect size. One consideration is how omitted responses impact these groups differently. 1% of responses were omitted for households with COVID-19, compared to just 0.5% for households without COVID-19 cases. Although the impact is small, this could have driven the difference in means further apart if we interpolated omitted responses with mean response for the group. Additionally, our responses were collected from August to November 2020, and cases only continued to spike to peak levels from Thanksgiving to New Years after this survey was conducted. We hope to continue research on this topic with refreshed data to see if there is a shift in the difference in approval rating (and effect size) since November. 
 
 ```{r, echo=FALSE, warning=TRUE, message=FALSE}
 cohen_d <- function(x, y) {
@@ -131,4 +131,12 @@ cohen_d <- function(x, y) {
 }
 ```
 
+          
+          
+          
+          
 **Data Source:** American National Election Studies. 2021. ANES 2020 Time Series Study Preliminary Release: Pre-Election Data [dataset and documentation]. February 11, 2021 version. www.electionstudies.org
+
+**COVID-19 Stats:** Johns Hopkins University & Medicine Coronavirus Resource Center: https://coronavirus.jhu.edu/us-map
+
+**COVID-19 Jobless:** Department of Labor Unemployment Insurance Weekly Claims Report: https://www.dol.gov/ui/data.pdf
