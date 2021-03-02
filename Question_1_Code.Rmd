@@ -15,7 +15,7 @@ library(effsize)
 
 ```{r load and clean data, echo=FALSE}
 # Load Data
-Data <- read_dta(file = '~/W203/Lab_1/anes_data.dta')
+Data <- read_dta(file = "anes_timeseries_2020_stata_20210211.dta")
 
 # Filter needed columns
 df <- Data[c("V201018", "V201507x", "V201151", "V201153", "V201624","V201145", "V201228")]
@@ -59,7 +59,7 @@ After the data clean up we had 2,786 Democratic respondents and 2,448 Republican
 ggplot(df_comb, aes(x=age, fill=fill)) +
     geom_histogram(binwidth=1, colour="black", position="dodge") +
     scale_fill_identity() + ggtitle("Histogram of Age Distribution") +
-    scale_fill_manual(name = "Party", values = c("blue", "red"), labels = c("Dem", "Rep")) + theme_classic()
+    scale_fill_manual(name = "Party", values = c("red", "blue"), labels = c("Rep", "Dem")) + theme_classic()
 
 
 ```
