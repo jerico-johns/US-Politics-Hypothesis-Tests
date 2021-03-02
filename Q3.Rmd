@@ -4,8 +4,8 @@ author: "Jeffrey Adams, Brittany Dougall, Jerico Johns, Li Jin"
 output: pdf_document
 ---
 ```{r load packages, echo=FALSE, warning=FALSE, message=FALSE}
-install.packages("rstatix", repos = "http://cran.us.r-project.org")
-install.packages("coin", repos = "http://cran.us.r-project.org")
+#install.packages("rstatix", repos = "http://cran.us.r-project.org")
+#install.packages("coin", repos = "http://cran.us.r-project.org")
 library(coin)
 library(rstatix)
 library(tidyverse)
@@ -35,30 +35,56 @@ covid_df <- covid_df %>% mutate(covid_pos_case = as.factor(covid_pos_case)) %>%
    mutate(covid_gov_approval = as.factor(covid_gov_approval))
 ```
 
-### Data Cleaning
+### Data cleaning
+
 `covid_pos_case` and `covid_gov_approval` both contain non definitive values (i.e. Interview Breakoff, Don’t know, Refused). The percentage of each value in those two columns are shown in the following charts:
 
-```{r fig.width = 7, fig.height= 3.5, echo=FALSE, warning=TRUE, message=FALSE}
-ggplot(covid_df, aes(as.factor(covid_pos_case))) + geom_bar(aes(y=(..count..)
-    /sum(..count..))) + scale_x_discrete('covid_pos_case', 
-    limits=c('-9', '-5', '1', '2'), 
-    labels=c("refused", 'interview breakoff', 'positive', 'negative')) + 
-  labs(title='Data distribution for covid_pos_case', y="percentage", 
+
+```{r fig.width = 6, fig.height= 2.5, echo=FALSE, warning=TRUE, message=FALSE}
+plot1 <- ggplot(covid_df, aes(as.factor(covid_pos_case))) + 
+  geom_bar(aes(y=(..count..)/sum(..count..))) +
+  scale_x_discrete('covid_pos_case',limits=c('-9', '-5', '1', '2'), 
+                   labels=c("refused", 'breakoff', 'positive', 'negative')) +
+  theme(text = element_text(size = 7)) +
+  labs(title='Distribution for covid_pos_case', y="percentage",
   x='covid_pos_case value')
+
+plot2 <- ggplot(covid_df, aes(x=as.factor(covid_gov_approval))) +
+  geom_bar(aes(y=(..count..)/sum(..count..))) +
+  scale_x_discrete('covid_gov_approval', limits=c('-9', '-8', '1', '2'),                                
+                   labels=c("refused", 'don\'t know', 'approve', 'disapprove')) +
+  theme(text = element_text(size = 7)) +
+  labs(title='Distribution for covid_gov_approval', y="percentage",
+     x='covid_pos_case value')
+grid.arrange(plot1, plot2, ncol=2)
 ```
 
-```{r fig.width = 7, fig.height= 3.5, echo=FALSE, warning=TRUE, message=FALSE}
-ggplot(covid_df, aes(as.factor(covid_gov_approval))) + 
-  geom_bar(aes(y=(..count..)/sum(..count..))) + 
-  scale_x_discrete('covid_gov_approval', limits=c('-9', '-8', '1', '2'),                                             labels=c("refused", 'don\'t know', 'approve', 'disapprove')) + 
-labs(title='Data distribution for covid_gov_approval', y="percentage", 
-     x='covid_pos_case value')
+```{r, echo=FALSE}
+covid_case_omitted <- covid_df %>% filter(covid_pos_case != 1 & covid_pos_case != 2)
+approval_omitted <- covid_df %>% filter(covid_gov_approval != 1 & covid_gov_approval != 2)
+
+covid_pos <-covid_df %>% filter(covid_pos_case == 1)
+covid_neg <- covid_df %>% filter(covid_pos_case == 2)
+approval_neg_omitted <- approval_omitted %>% filter(covid_pos_case == 2)
+approval_pos_omitted <- approval_omitted %>% filter(covid_pos_case == 1)
+
+covid_case_omitted_pct <- nrow(covid_case_omitted) / nrow(covid_df)
+approval_omitted_pct <- nrow(approval_omitted) / nrow(covid_df)
+
+# Approval omitted pct among covid positive/negetive
+approval_pos_omitted_pct <- nrow(approval_pos_omitted) / nrow(covid_pos)
+approval_neg_omitted_pct <- nrow(approval_neg_omitted) / nrow(covid_neg)
 ```
-Given that the percentage of invalid data are small, we decide to exclude any responses that are not a definitive response and analyze how these omissions impact our two samples in the interpretation of results. We also map value for `covid_gov_approval` from: `1: approve` and `2: disapprove` to more standard mapping for binary variable: `0: disapprove` and `1: approve`.
+
+Given that the percentage of invalid data is small (1% for covid_pos_case, 0.6% for covid_gov_approval), we decide to exclude any responses that are not a definitive response and analyze how these omissions impact our two samples in the interpretation of results. 
+
+### Data transformation
+
+We map value for `covid_gov_approval` from: `1: approve` and `2: disapprove` to more standard mapping for binary variable: `0: disapprove` and `1: approve`.
 
 ```{r, echo=FALSE, warning=TRUE, message=FALSE}
-covid_df <- covid_df %>% 
-  filter(covid_pos_case == 1 | covid_pos_case == 2) %>% 
+covid_df_final <- covid_df %>% 
+  filter(covid_pos_case == 1 | covid_pos_case == 2) %>%
   filter(covid_gov_approval == 1 | covid_gov_approval == 2) %>% 
   mutate(covid_gov_approval = ifelse(covid_gov_approval == 1, 1, 0))
 ```
@@ -67,8 +93,8 @@ covid_df <- covid_df %>%
 
 Given our outcome variable of interest is a binary approve/disapprove rating, we treat it as a binomial distribution, and choose to use a Welch Two Sample t-test for comparing two means (also proportions in the binomial case) with unequal variances to evaluate the null hypothesis: 
 
-- $H_{0}$: There is no difference in the mean approval rating of the governor’s handling of COVID-19 between households who have had a positive COVID case and those who have not. $\mu_{1}$ = $\mu_{2}$
-- $H_{A}$: There is a difference in the mean approval rating of the governor’s handling of COVID-19 between households who have had a positive COVID case and those who have not. $\mu_{1}$ <> $\mu_{2}$
+- $H_{0}$: There is no difference in the mean approval rating of the governor’s handling of COVID-19 between households who have had a positive COVID case and those who have not. $\mu_{1} = \mu_{2}$
+- $H_{A}$: There is a difference in the mean approval rating of the governor’s handling of COVID-19 between households who have had a positive COVID case and those who have not. $\mu_{1} \neq \mu_{2}$
 
 Although there are other tests specifically for testing differences in proportions (i.e. Proportions Test or Chi-Squared Test) we will utilize the two-sample t-test, as the mean, or expected value, of a binomial distribution is in fact the proportion of successes of such a distribution. While we in theory are comparing our test statistics to a Z-distribution (standard normal), the $t.test$ functionality in R forces us to compare to a t-distribution, which with large $n$ approximates $Z$ almost equally. A proportions test would compare to a Chi-squared distribution, which is slightly different and would lead to slightly different results and interpretation. We will therefore be careful in our interpretation of the $t.test$ results with regards to the mean of a binary outcome. 
 
@@ -76,14 +102,14 @@ Our assumptions for such a test are:
 
 - Metric scale: We treat approve / disapprove ratings (which are not metric at first glance) as a binomial distribution with Pr(Disapprove) = Pr(0) and Pr(Approve) = Pr(1). 
 - IID Data: We argue that our data is indeed independent, as only one member from each household is surveyed which limits a household dependence in responses, and households are selected randomly for survey across stratified groups. It is a bit tougher to argue that our data is identically distributed. Even though our data is collected across the span of less than 4 months, the 4 months leading up to the election were one of the more rapidly changing 4 months in recent memory, with COVID-19 cases spiking dramatically into the November election which may have changed the distribution of public opinion toward federal and state governments. Our data thus should be interpreted with a degree of skepticism, as it may be likely that the response actually underestimate the proportion of governor disapproval given the dramatic increase in COVID cases throughout collection and post-collection. 
-- No major deviations from normality, considering the sample size: Given sample size > 40, we have sufficient sample size $n$ for the Central Limit Theorem to kick in and guarantee a normal samplign distribution, even for a binomial population distribution. 
+- No major deviations from normality, considering the sample size: Given sample size > 40, we have sufficient sample size $n$ for the Central Limit Theorem to kick in and guarantee a normal sampling distribution, even for a binomial population distribution.
 
 ### Test, results and interpretation
 
 ```{r, echo=FALSE, warning=TRUE, message=FALSE}
 
-covid_df_pos <- covid_df %>% filter(covid_pos_case == 1)
-covid_df_neg <- covid_df %>% filter(covid_pos_case == 2)
+covid_df_pos <- covid_df_final %>% filter(covid_pos_case == 1)
+covid_df_neg <- covid_df_final %>% filter(covid_pos_case == 2)
 t.test(covid_df_pos['covid_gov_approval'], covid_df_neg['covid_gov_approval'], alternative = 'two.sided')
 ```
 
